@@ -1,26 +1,9 @@
 Classification of Exercises Quality
 ========================================================
 * Introduction
-
-```r
+```{r, cache=TRUE}
 #library(data.table)
 library(dplyr)
-```
-
-```
-## 
-## Attaching package: 'dplyr'
-## 
-## The following objects are masked from 'package:stats':
-## 
-##     filter, lag
-## 
-## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union
-```
-
-```r
 url.train <- 'http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv'
 url.test <- 'http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv'
 df.train <- read.csv(url.train)
@@ -29,55 +12,27 @@ df.test <- read.csv(url.test)
 
 * Data Preprocessing
 First we check the ratio of NAs in each column in the training set and test set.  There are many columns having a very high ratio of NAs.
-
-```r
+```{r}
 table(colMeans(is.na(df.train)))
-```
-
-```
-## 
-##                 0 0.979308938946081 
-##                93                67
-```
-
-```r
 table(colMeans(is.na(df.test)))
 ```
 
-```
-## 
-##   0   1 
-##  60 100
-```
+```{r}
 
-
+```
 
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring web pages (click the **Help** toolbar button for more details on using R Markdown).
 
 When you click the **Knit HTML** button a web page will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-
-```r
+```{r}
 summary(cars)
-```
-
-```
-##      speed           dist    
-##  Min.   : 4.0   Min.   :  2  
-##  1st Qu.:12.0   1st Qu.: 26  
-##  Median :15.0   Median : 36  
-##  Mean   :15.4   Mean   : 43  
-##  3rd Qu.:19.0   3rd Qu.: 56  
-##  Max.   :25.0   Max.   :120
 ```
 
 You can also embed plots, for example:
 
-
-```r
+```{r fig.width=7, fig.height=6}
 plot(cars)
 ```
-
-![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5.png) 
 
