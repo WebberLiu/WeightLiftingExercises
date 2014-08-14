@@ -1,17 +1,57 @@
 Classification of Exercises Quality
 ========================================================
-# Introduction
+## Introduction
+The Weight Lifting Exercises (WLE) data set [1] are sensor recorded data of six persons performing one exercise (Unilateral Dumbbell Biceps Curl) in five different fashions: class A is the correct manner while classes B-E are different types of incorrect manners.  We will build a model to predict the class of exercise from sensor data and estimate the out-of-sample error rate of this model.
+
+## R Libraries
 
 ```r
 library(dplyr)
+```
+
+```
+## 
+## Attaching package: 'dplyr'
+## 
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+## 
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+```
+
+```r
+library(randomForest)
+```
+
+```
+## randomForest 4.6-10
+## Type rfNews() to see new features/changes/bug fixes.
+```
+
+```r
+library(caret)
+```
+
+```
+## Loading required package: lattice
+## Loading required package: ggplot2
+```
+
+## Data Input
+
+```r
 url.train <- 'http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv'
 url.test <- 'http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv'
 df.train <- read.csv(url.train)
 df.test <- read.csv(url.test)
 ```
 
-# Data Preprocessing
+## Data Preprocessing
 First we check the ratio of NAs in each column in the training set and test set.  
+
 
 ```r
 table(colMeans(is.na(df.train)))
@@ -68,7 +108,7 @@ setdiff(cols.na.test, cols.na.train)
 ## [31] "max_yaw_forearm"         "min_yaw_forearm"        
 ## [33] "amplitude_yaw_forearm"
 ```
-The set cols.na.test is a larger set and contains the set cols.na.train.  Thus we remove columns in cols.na.test.
+The set "cols.na.test"" is a larger set and contains the set "cols.na.train".  Thus we remove columns in "cols.na.test".
 
 ```r
 df.train2 <- df.train[,setdiff(names(df.train),cols.na.test)]
@@ -143,16 +183,8 @@ dim(df.test2)
 ```
 ## [1] 20 53
 ```
+## Data Splitting
 To evaluate out-of-sample performance, we reserve 40% of data for validation.
-
-```r
-library(caret)
-```
-
-```
-## Loading required package: lattice
-## Loading required package: ggplot2
-```
 
 ```r
 seed = 123
@@ -162,17 +194,9 @@ trainIndex <- createDataPartition(df.train2$classe, p = .6,
 df.train.split <- df.train2[trainIndex,]
 df.validate.split <- df.train2[-trainIndex,]
 ```
-For model selection, we choose the random forest model.  There is no need for cross-validation as this model could provide out-of-bag (oob) validation [2].
+## Model for Machine Learning
+The random forest model is used for machine learning.  This model has a built-in validation mechanism called out-of-bag (oob) error estimation [2].  Thus we will get two estimates of the out-of-sample error rate.
 
-
-```r
-library(randomForest)
-```
-
-```
-## randomForest 4.6-10
-## Type rfNews() to see new features/changes/bug fixes.
-```
 
 ```r
 fit.rf <- randomForest(classe~., df.train.split)
@@ -196,7 +220,9 @@ fit.rf
 ## D    1    0   23 1905    1    0.012953
 ## E    0    0    2    7 2156    0.004157
 ```
-Then we apply the model to the validation set to estimate the out-of-sample error accuracy.
+
+## Validation
+Then we apply the model to the validation set and compare the prediction output to the reference classes.
 
 ```r
 pred <- predict(fit.rf, newdata=df.validate.split)
@@ -238,5 +264,31 @@ conf
 ## Balanced Accuracy       0.999    0.995    0.994    0.995    0.998
 ```
 
+## Out-of-sample Error Rate
+Now we have two error rate estimates, one from the validation and the other from OOB of random forest model.  These two numbers look quite consistent.
 
+```r
+errorRate.validate <-  1 - conf$overall[["Accuracy"]]
+errorRate.oob <- tail(fit.rf$err.rate,1)[,"OOB"]
+errorRate.validate
+```
+
+```
+## [1] 0.005608
+```
+
+```r
+errorRate.oob
+```
+
+```
+## [1] 0.006539
+```
+
+
+## Reference
+1. Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
+Read more: http://groupware.les.inf.puc-rio.br/har#wle_paper_section#ixzz3ALjBH6NX
+
+2. http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#ooberr
 

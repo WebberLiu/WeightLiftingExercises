@@ -1,17 +1,26 @@
 Classification of Exercises Quality
 ========================================================
-# Introduction
-```{r, cache=TRUE}
+## Introduction
+The Weight Lifting Exercises (WLE) data set [1] are sensor recorded data of six persons performing one exercise (Unilateral Dumbbell Biceps Curl) in five different fashions: class A is the correct manner while classes B-E are different types of incorrect manners.  We will build a model to predict the class of exercise from sensor data and estimate the out-of-sample error rate of this model.
 
+## R Libraries
+```{r}
 library(dplyr)
+library(randomForest)
+library(caret)
+```
+
+## Data Input
+```{r, cache=TRUE}
 url.train <- 'http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv'
 url.test <- 'http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv'
 df.train <- read.csv(url.train)
 df.test <- read.csv(url.test)
 ```
 
-# Data Preprocessing
+## Data Preprocessing
 First we check the ratio of NAs in each column in the training set and test set.  
+
 ```{r}
 table(colMeans(is.na(df.train)))
 table(colMeans(is.na(df.test)))
@@ -24,7 +33,7 @@ cols.na.test <-  names(df.test)[colMeans(is.na(df.test)) > 0.9]
 setdiff(cols.na.train, cols.na.test)
 setdiff(cols.na.test, cols.na.train)
 ```
-The set cols.na.test is a larger set and contains the set cols.na.train.  Thus we remove columns in cols.na.test.
+The set "cols.na.test"" is a larger set and contains the set "cols.na.train".  Thus we remove columns in "cols.na.test".
 ```{r}
 df.train2 <- df.train[,setdiff(names(df.train),cols.na.test)]
 df.test2 <- df.test[,setdiff(names(df.test),cols.na.test)]
@@ -40,9 +49,9 @@ df.test2 <- select(df.test2, -(X:num_window))
 dim(df.train2)
 dim(df.test2)
 ```
+## Data Splitting
 To evaluate out-of-sample performance, we reserve 40% of data for validation.
 ```{r}
-library(caret)
 seed = 123
 set.seed(seed)
 trainIndex <- createDataPartition(df.train2$classe, p = .6,
@@ -50,19 +59,35 @@ trainIndex <- createDataPartition(df.train2$classe, p = .6,
 df.train.split <- df.train2[trainIndex,]
 df.validate.split <- df.train2[-trainIndex,]
 ```
-For model selection, we choose the random forest model.  There is no need for cross-validation as this model could provide out-of-bag (oob) validation [2].
+## Model for Machine Learning
+The random forest model is used for machine learning.  This model has a built-in validation mechanism called out-of-bag (oob) error estimation [2].  Thus we will get two estimates of the out-of-sample error rate.
 
 ```{r, cache=TRUE}
-library(randomForest)
 fit.rf <- randomForest(classe~., df.train.split)
 fit.rf
 ```
-Then we apply the model to the validation set to estimate the out-of-sample error accuracy.
+
+## Validation
+Then we apply the model to the validation set and compare the prediction output to the reference classes.
 ```{r}
 pred <- predict(fit.rf, newdata=df.validate.split)
 conf <- confusionMatrix(pred, df.validate.split$classe)
 conf
 ```
 
+## Out-of-sample Error Rate
+Now we have two error rate estimates, one from the validation and the other from OOB of random forest model.  These two numbers look quite consistent.
+```{r}
+errorRate.validate <-  1 - conf$overall[["Accuracy"]]
+errorRate.oob <- tail(fit.rf$err.rate,1)[,"OOB"]
+errorRate.validate
+errorRate.oob
+```
 
+
+## Reference
+1. Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
+Read more: http://groupware.les.inf.puc-rio.br/har#wle_paper_section#ixzz3ALjBH6NX
+
+2. http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#ooberr
 
