@@ -1,8 +1,8 @@
 Classification of Exercises Quality
 ========================================================
-* Introduction
+# Introduction
 ```{r, cache=TRUE}
-#library(data.table)
+
 library(dplyr)
 url.train <- 'http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv'
 url.test <- 'http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv'
@@ -10,29 +10,59 @@ df.train <- read.csv(url.train)
 df.test <- read.csv(url.test)
 ```
 
-* Data Preprocessing
-First we check the ratio of NAs in each column in the training set and test set.  There are many columns having a very high ratio of NAs.
+# Data Preprocessing
+First we check the ratio of NAs in each column in the training set and test set.  
 ```{r}
 table(colMeans(is.na(df.train)))
 table(colMeans(is.na(df.test)))
 ```
+There are 67 columns in training set and 100 columns in test set with very high ratios of NAs.  We further extract the names of test columns and check the difference.
 
 ```{r}
-
+cols.na.train <- names(df.train)[colMeans(is.na(df.train)) > 0.9]
+cols.na.test <-  names(df.test)[colMeans(is.na(df.test)) > 0.9]
+setdiff(cols.na.train, cols.na.test)
+setdiff(cols.na.test, cols.na.train)
 ```
-
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring web pages (click the **Help** toolbar button for more details on using R Markdown).
-
-When you click the **Knit HTML** button a web page will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
+The set cols.na.test is a larger set and contains the set cols.na.train.  Thus we remove columns in cols.na.test.
 ```{r}
-summary(cars)
+df.train2 <- df.train[,setdiff(names(df.train),cols.na.test)]
+df.test2 <- df.test[,setdiff(names(df.test),cols.na.test)]
+dim(df.train2)
+dim(df.test2)
+names(df.train2)
+```
+The first few features include user and time related information.  Based on the experiment, a user did one class of exercise for a period of time, then he moved on to the next class, so on and so forth.  The user and time related information could have strong predictive power but won't be generalized to new data recorded by other users or in the future.  These features should not be used in model training and thus are removed.
+```{r}
+names(df.train2)[1:7]
+df.train2 <- select(df.train2, -(X:num_window))
+df.test2 <- select(df.test2, -(X:num_window))
+dim(df.train2)
+dim(df.test2)
+```
+To evaluate out-of-sample performance, we reserve 40% of data for validation.
+```{r}
+library(caret)
+seed = 123
+set.seed(seed)
+trainIndex <- createDataPartition(df.train2$classe, p = .6,
+                                  list = FALSE)
+df.train.split <- df.train2[trainIndex,]
+df.validate.split <- df.train2[-trainIndex,]
+```
+For model selection, we choose the random forest model.  There is no need for cross-validation as this model could provide out-of-bag (oob) validation [2].
+
+```{r, cache=TRUE}
+library(randomForest)
+fit.rf <- randomForest(classe~., df.train.split)
+fit.rf
+```
+Then we apply the model to the validation set to estimate the out-of-sample error accuracy.
+```{r}
+pred <- predict(fit.rf, newdata=df.validate.split)
+conf <- confusionMatrix(pred, df.validate.split$classe)
+conf
 ```
 
-You can also embed plots, for example:
 
-```{r fig.width=7, fig.height=6}
-plot(cars)
-```
 
